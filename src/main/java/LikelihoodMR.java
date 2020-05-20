@@ -1,6 +1,6 @@
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -14,6 +14,8 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.IOException;
 
+import static java.lang.Math.*;
+
 public class LikelihoodMR {
 
     public static class MapperClass extends Mapper<LongWritable, Text, Text, Text> {
@@ -22,14 +24,31 @@ public class LikelihoodMR {
         public void map(LongWritable lineId, Text line, Context context) throws IOException, InterruptedException {
             String[] words = line.toString().split("\\s+");
             //Assuming work on 1 gram
-            float ll = (float) Long.valueOf(words[3]) / Long.valueOf(words[6]);
+            double ll = calculateLogLikelihood(Double.valueOf(words[4]), Double.valueOf(words[5]),
+                    Double.valueOf(words[3]), Double.valueOf(words[6]));
             Text nKey = new Text(words[2] + "\t" + ll);
             context.write(nKey, new Text(line));
         }
 
+        private double calculateLogLikelihood(double c1, double c2, double c12, double N) {
+            double p = c2 /N;
+            double p1 = c12 /c1;
+            double p2 = (c2-c12)/(N - c1);
+            double res =
+                  log(L(c12, c1, p)) +
+                    log(L(c2 - c12, N - c1, p)) -
+                        log(L(c12, c1, p1)) -
+                            log(L(c2 - c12, N - c1, p2));
+            return res;
+
+        }
+        private double L(double k, double n, double x) {
+            return (pow(x, k) * pow(1 - x, n - k));
+        }
+
     }
 
-    public static class ReducerClass extends Reducer<Text, Text, Text, FloatWritable> {
+    public static class ReducerClass extends Reducer<Text, Text, Text, DoubleWritable> {
         static int counter;
         static String curDecade;
 
@@ -42,7 +61,7 @@ public class LikelihoodMR {
             if (counter < 100) {
                 for (Text val : values) {
                     String[] value = val.toString().split("\\s+");
-                    context.write(new Text(value[2] + "\t" + value[0] + " " + value[1]), new FloatWritable(getLogLikelihood(key)));
+                    context.write(new Text(value[2] + "\t" + value[0] + " " + value[1]), new DoubleWritable(getLogLikelihood(key)));
                     counter++;
                 }
             }
@@ -52,8 +71,8 @@ public class LikelihoodMR {
             return key.toString().split("\\s+")[0];
         }
 
-        private float getLogLikelihood(Text key) {
-            return Float.valueOf(key.toString().split("\\s+")[1]);
+        private double getLogLikelihood(Text key) {
+            return Double.valueOf(key.toString().split("\\s+")[1]);
         }
     }
 
@@ -76,7 +95,7 @@ public class LikelihoodMR {
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(Text.class);
         job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(FloatWritable.class);
+        job.setOutputValueClass(DoubleWritable.class);
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
         job.setInputFormatClass(TextInputFormat.class);
