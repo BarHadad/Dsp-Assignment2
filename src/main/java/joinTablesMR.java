@@ -1,6 +1,5 @@
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -15,45 +14,57 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import java.io.IOException;
 
 public class joinTablesMR {
-    public static class MapperClass extends Mapper<LongWritable, Text, Text, IntWritable> {
+    public static String ONE_GRAM_TAG = "1gram";
+    public static String TWO_GRAM_TAG = "2gram";
+
+    public static class MapperClass extends Mapper<LongWritable, Text, Text, Text> {
 
         @Override
-        public void map(LongWritable lineId, Text line, Context context) throws IOException,  InterruptedException {
+        public void map(LongWritable lineId, Text line, Context context) throws IOException, InterruptedException {
             String[] words = line.toString().split("\\s+");
             //Assuming work on 1 gram
-
-            if(words.length == 3) { // Reading from 1Gram
-                context.write(new Text(words[0] + "\t" + words[1] + "\t" + "1gram"), new IntWritable(Integer.valueOf(words[2])));
-//                context.write(new Text("Decade:" + findDecade(words[1])), new IntWritable(Integer.valueOf(words[2])));
+            if (words.length == 3) { // Reading from 1Gram
+                Text onrGramKey = new Text(words[0] + "\t" + words[1] + "\t" + ONE_GRAM_TAG);
+                context.write(onrGramKey, new Text(line));
+            } else if (words.length == 4) { // Reading from 2Gram, take the first word
+                Text twoGramKey = new Text(words[0] + "\t" + words[2] + "\t" + TWO_GRAM_TAG);
+                context.write(twoGramKey, new Text(line));
             }
-            else if (words.length == 4) { // Reading from 2Gram
-                context.write(new Text(words[0] + " " + words[1] + "\t" + words[2] + "\t" + "2gram"), new IntWritable(Integer.valueOf(words[3])));
-//                 context.write(new Text("Decade:" + findDecade(words[2])), new IntWritable(Integer.valueOf(words[3])));
-            }
-
         }
-
 
     }
 
-    public static class ReducerClass extends Reducer<Text,IntWritable,Text,IntWritable> {
-        long kVal = 0;
+    public static class ReducerClass extends Reducer<Text, Text, Text, LongWritable> {
+        static String currentKey;
+        static long oneGramCounter;
 
         @Override
-        public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException,  InterruptedException {
-            kVal
-
-            int sum = 0;
-            for (IntWritable value : values) {
-                sum += value.get();
+        public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+            String nonTaggedKey = removeTag(key);
+            if (!nonTaggedKey.equals(currentKey)) {
+                currentKey = nonTaggedKey;
+                oneGramCounter = 0;
             }
-            context.write(key, new IntWritable(sum));
+            if (key.toString().endsWith(ONE_GRAM_TAG)) {
+                String[] oneGramData = (values.iterator().next().toString().split("\\s+"));
+                oneGramCounter = Long.valueOf(oneGramData[2]);
+            } else {
+                for (Text pair : values) {
+                    context.write(pair, new LongWritable(oneGramCounter));
+                }
+            }
+        }
+
+        private String removeTag(Text key) {
+            if(key.toString().endsWith(ONE_GRAM_TAG))
+                return key.toString().substring(0, key.toString().indexOf(ONE_GRAM_TAG));
+            else return key.toString().substring(0, key.toString().indexOf(TWO_GRAM_TAG));
         }
     }
 
-    public static class PartitionerClass extends Partitioner<Text, IntWritable> {
+    public static class PartitionerClass extends Partitioner<Text, Text> {
         @Override
-        public int getPartition(Text key, IntWritable value, int numPartitions) {
+        public int getPartition(Text key, Text value, int numPartitions) {
             return key.hashCode() % numPartitions;
         }
     }
@@ -69,7 +80,7 @@ public class joinTablesMR {
 //        job.setCombinerClass(ReducerClass.class);
         job.setReducerClass(ReducerClass.class);
         job.setMapOutputKeyClass(Text.class);
-        job.setMapOutputValueClass(IntWritable.class);
+        job.setMapOutputValueClass(Text.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(LongWritable.class);
         job.setInputFormatClass(TextInputFormat.class);
@@ -78,7 +89,7 @@ public class joinTablesMR {
         Path oneGram = new Path(args[0]);
         Path twoGram = new Path(args[1]);
 //        Path decs = new Path(args[2]);
-        Path outputPath = new Path(args[3]);
+        Path outputPath = new Path(args[2]);
         MultipleInputs.addInputPath(job, oneGram, TextInputFormat.class, MapperClass.class);
         MultipleInputs.addInputPath(job, twoGram, TextInputFormat.class, MapperClass.class);
 //        MultipleInputs.addInputPath(job, decs, TextInputFormat.class, MapperClass.class);
