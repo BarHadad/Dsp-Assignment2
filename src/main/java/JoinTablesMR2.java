@@ -13,9 +13,9 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.IOException;
 
-public class joinTablesMR {
-    public static String ONE_GRAM_TAG = "1gram";
-    public static String TWO_GRAM_TAG = "2gram";
+public class JoinTablesMR2 {
+    static String ONE_GRAM_TAG = "1gram";
+    static String TWO_GRAM_TAG = "2gram";
 
     public static class MapperClass extends Mapper<LongWritable, Text, Text, Text> {
 
@@ -26,8 +26,8 @@ public class joinTablesMR {
             if (words.length == 3) { // Reading from 1Gram
                 Text onrGramKey = new Text(words[0] + "\t" + words[1] + "\t" + ONE_GRAM_TAG);
                 context.write(onrGramKey, new Text(line));
-            } else if (words.length == 4) { // Reading from 2Gram, take the first word
-                Text twoGramKey = new Text(words[0] + "\t" + words[2] + "\t" + TWO_GRAM_TAG);
+            } else { // Reading from 2Gram, take the second word
+                Text twoGramKey = new Text(words[1] + "\t" + words[2] + "\t" + TWO_GRAM_TAG);
                 context.write(twoGramKey, new Text(line));
             }
         }
@@ -48,7 +48,7 @@ public class joinTablesMR {
             if (key.toString().endsWith(ONE_GRAM_TAG)) {
                 String[] oneGramData = (values.iterator().next().toString().split("\\s+"));
                 oneGramCounter = Long.valueOf(oneGramData[2]);
-            } else {
+            } else { //2gram
                 for (Text pair : values) {
                     context.write(pair, new LongWritable(oneGramCounter));
                 }
@@ -56,7 +56,7 @@ public class joinTablesMR {
         }
 
         private String removeTag(Text key) {
-            if(key.toString().endsWith(ONE_GRAM_TAG))
+            if (key.toString().endsWith(ONE_GRAM_TAG))
                 return key.toString().substring(0, key.toString().indexOf(ONE_GRAM_TAG));
             else return key.toString().substring(0, key.toString().indexOf(TWO_GRAM_TAG));
         }
@@ -74,7 +74,7 @@ public class joinTablesMR {
 
         Configuration conf = new Configuration();
         Job job = new Job(conf, "joinTables");
-        job.setJarByClass(joinTablesMR.class);
+        job.setJarByClass(JoinTablesMR2.class);
         job.setMapperClass(MapperClass.class);
         job.setPartitionerClass(PartitionerClass.class);
 //        job.setCombinerClass(ReducerClass.class);
