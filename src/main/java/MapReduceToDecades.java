@@ -1,3 +1,4 @@
+import java.io.FileOutputStream;
 import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -8,10 +9,12 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 public class MapReduceToDecades {
@@ -29,12 +32,13 @@ public class MapReduceToDecades {
             }
             else {
                 context.write(new Text("2gram:" + words[0] + " " + words[1] + "\t" + findDecade(words[2])), new IntWritable(Integer.valueOf(words[3])));
+//                 context.write(new Text("Decade:" + findDecade(words[2])), new IntWritable(Integer.valueOf(words[3])));
             }
         }
 
         private String findDecade(String word) {
             String dec = word.substring(0, word.length() - 1);
-            return  dec + "0 - " + dec + "9";
+            return  dec + "0-" + dec + "9";
         }
     }
 
