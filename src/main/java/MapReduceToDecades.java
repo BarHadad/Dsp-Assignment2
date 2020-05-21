@@ -114,10 +114,6 @@ public class MapReduceToDecades {
 
     public static void main(String[] args) throws Exception {
         Configuration conf = new Configuration();
-        String engStopWords = args[2];
-        String hebStopWords = args[3];
-        conf.set("engStopWords", engStopWords);
-        conf.set("hebStopWords", hebStopWords);
 
         Job job = new Job(conf, "gramsUnionAndDecsCalc");
         job.setJarByClass(MapReduceToDecades.class);
@@ -139,7 +135,7 @@ public class MapReduceToDecades {
 
         Path oneGram = new Path(args[0]);
         Path twoGram = new Path(args[1]);
-        Path outputPath = new Path(args[4]);
+        Path outputPath = new Path(args[2]);
         MultipleInputs.addInputPath(job, oneGram, GoogleGramInputFormat.class, MapperClass.class);
         MultipleInputs.addInputPath(job, twoGram, GoogleGramInputFormat.class, MapperClass.class);
 
