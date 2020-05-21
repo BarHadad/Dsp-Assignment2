@@ -1,4 +1,8 @@
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -18,28 +22,43 @@ public class MapReduceToDecades {
 
     // TODO: 17/05/2020 add Better combiner, add stop words check.
     public static class MapperClass extends Mapper<LongWritable, Text, Text, IntWritable> {
+        static Set<String> engStopWords;
+        static Set<String> hebStopWords;
 
         @Override
-        public void map(LongWritable lineId, Text line, Context context) throws IOException,  InterruptedException {
+        protected void setup(Context context) throws IOException, InterruptedException {
+            loadStopWords();
+        }
+
+        private void loadStopWords() throws IOException {
+            engStopWords = new HashSet<>(Files.readAllLines(Paths.get("src/main/resources/englishStopWords")));
+            hebStopWords = new HashSet<>(Files.readAllLines(Paths.get("src/main/resources/hebrewStopWords")));
+        }
+
+        @Override
+        public void map(LongWritable lineId, Text line, Context context) throws IOException, InterruptedException {
             String[] words = line.toString().split("\\s+");
             //Assuming work on 1 gram
-            if(words.length == 5) {
+            if (words.length == 5) {
                 context.write(new Text("1gram:" + words[0] + "\t" + findDecade(words[1])), new IntWritable(Integer.valueOf(words[2])));
                 context.write(new Text("Decade:" + findDecade(words[1])), new IntWritable(Integer.valueOf(words[2])));
-            }
-            else {
+            } else {
+                if (stopWord(words[0]) || stopWord(words[1])) return;
                 context.write(new Text("2gram:" + words[0] + " " + words[1] + "\t" + findDecade(words[2])), new IntWritable(Integer.valueOf(words[3])));
-//                 context.write(new Text("Decade:" + findDecade(words[2])), new IntWritable(Integer.valueOf(words[3])));
             }
+        }
+
+        private boolean stopWord(String word) {
+            return engStopWords.contains(word) || hebStopWords.contains(word);
         }
 
         private String findDecade(String word) {
             String dec = word.substring(0, word.length() - 1);
-            return  dec + "0-" + dec + "9";
+            return dec + "0-" + dec + "9";
         }
     }
 
-    public static class ReducerClass extends Reducer<Text,IntWritable,Text,LongWritable> {
+    public static class ReducerClass extends Reducer<Text, IntWritable, Text, LongWritable> {
         private MultipleOutputs<Text, LongWritable> mo;
 
         public void setup(Context context) {
@@ -47,31 +66,29 @@ public class MapReduceToDecades {
         }
 
         @Override
-        public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException,  InterruptedException {
+        public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
             long decadeCount = 0;
             StringBuilder sKey = new StringBuilder(key.toString());
-            if(sKey.toString().startsWith("Decade:"))
-            {
-                for (IntWritable count: values) {
+            if (sKey.toString().startsWith("Decade:")) {
+                for (IntWritable count : values) {
                     decadeCount += count.get();
                 }
                 String newKey;
                 newKey = sKey.substring("Decade:".length());
                 mo.write(new Text(newKey), new LongWritable(decadeCount), "Decs");
-            }
-            else {
+            } else {
                 int sum = 0;
                 for (IntWritable value : values) {
                     sum += value.get();
                 }
-                if(sKey.toString().startsWith("1gram:"))
+                if (sKey.toString().startsWith("1gram:"))
                     mo.write(new Text(sKey.substring("1gram:".length())), new LongWritable(sum), "1gram");
                 else
                     mo.write(new Text(sKey.substring("2gram:".length())), new LongWritable(sum), "2gram");
             }
         }
 
-        public void cleanup(Context context) throws InterruptedException,IOException{
+        public void cleanup(Context context) throws InterruptedException, IOException {
             mo.close();
         }
     }
@@ -121,8 +138,6 @@ public class MapReduceToDecades {
         FileOutputFormat.setOutputPath(job, outputPath);
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
-
-
 
 
     }
