@@ -1,8 +1,10 @@
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.HashSet;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -22,10 +24,23 @@ public class MapReduceToDecades {
     public static class MapperClass extends Mapper<Text, GoogleGram, Text, LongWritable> {
         static Set<String> engStopWords;
         static Set<String> hebStopWords;
+
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            engStopWords = new HashSet<>(Files.readAllLines(Paths.get(context.getConfiguration().get("engStopWords"))));
-            hebStopWords = new HashSet<>(Files.readAllLines(Paths.get(context.getConfiguration().get("hebStopWords"))));
+            try (InputStream in = MapReduceToDecades.class.getClassLoader().getResourceAsStream("englishStopWords")) {
+                if (in != null) {
+                    engStopWords = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))
+                            .lines()
+                            .collect(Collectors.toSet());
+                }
+            }
+            try (InputStream in = MapReduceToDecades.class.getClassLoader().getResourceAsStream("englishStopWords")) {
+                if (in != null) {
+                    hebStopWords = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))
+                            .lines()
+                            .collect(Collectors.toSet());
+                }
+            }
         }
 
         @Override
@@ -98,14 +113,11 @@ public class MapReduceToDecades {
 
 
     public static void main(String[] args) throws Exception {
-
-
         Configuration conf = new Configuration();
         String engStopWords = args[2];
         String hebStopWords = args[3];
         conf.set("engStopWords", engStopWords);
         conf.set("hebStopWords", hebStopWords);
-
 
         Job job = new Job(conf, "gramsUnionAndDecsCalc");
         job.setJarByClass(MapReduceToDecades.class);
@@ -145,7 +157,5 @@ public class MapReduceToDecades {
         FileOutputFormat.setOutputPath(job, outputPath);
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
-
-
     }
 }
