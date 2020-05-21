@@ -3,8 +3,9 @@ import org.apache.hadoop.io.WritableComparable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.Objects;
 
-public class GoogleGram implements WritableComparable {
+public class GoogleGram implements WritableComparable<GoogleGram> {
 
     private String gram; // - The n gram
     private String year; // - The year for this aggregation
@@ -32,45 +33,25 @@ public class GoogleGram implements WritableComparable {
         return gram;
     }
 
-    public void setGram(String gram) {
-        this.gram = gram;
-    }
-
     public String getYear() {
         return year;
-    }
-
-    public void setYear(String year) {
-        this.year = year;
     }
 
     public long getOccurrences() {
         return occurrences;
     }
 
-    public void setOccurrences(long occurrences) {
-        this.occurrences = occurrences;
-    }
-
     public long getPages() {
         return pages;
-    }
-
-    public void setPages(long pages) {
-        this.pages = pages;
     }
 
     public long getBooks() {
         return books;
     }
 
-    public void setBooks(long books) {
-        this.books = books;
-    }
-
     @Override
-    public int compareTo(Object o) {
-        return gram.compareTo(((GoogleGram)o).gram);
+    public int compareTo(GoogleGram o) {
+        return gram.compareTo(o.gram);
     }
 
     /**
@@ -95,7 +76,24 @@ public class GoogleGram implements WritableComparable {
         gram = dataInput.readUTF();
         year = dataInput.readUTF();
         occurrences = dataInput.readLong();
-        pages =  dataInput.readLong();
-        books =  dataInput.readLong();
+        pages = dataInput.readLong();
+        books = dataInput.readLong();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        GoogleGram that = (GoogleGram) o;
+        return occurrences == that.occurrences &&
+                pages == that.pages &&
+                books == that.books &&
+                Objects.equals(gram, that.gram) &&
+                Objects.equals(year, that.year);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(gram, year, occurrences, pages, books);
     }
 }

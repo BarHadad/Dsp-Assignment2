@@ -24,8 +24,8 @@ public class LikelihoodMR {
         public void map(LongWritable lineId, Text line, Context context) throws IOException, InterruptedException {
             String[] words = line.toString().split("\\s+");
             //Assuming work on 1 gram
-            double ll = calculateLogLikelihood(Double.valueOf(words[4]), Double.valueOf(words[5]),
-                    Double.valueOf(words[3]), Double.valueOf(words[6]));
+            double ll = calculateLogLikelihood(Double.parseDouble(words[4]), Double.parseDouble(words[5]),
+                    Double.parseDouble(words[3]), Double.parseDouble(words[6]));
             Text nKey = new Text(words[2] + "\t" + ll);
             context.write(nKey, new Text(line));
         }
@@ -61,7 +61,8 @@ public class LikelihoodMR {
             if (counter < 100) {
                 for (Text val : values) {
                     String[] value = val.toString().split("\\s+");
-                    context.write(new Text(value[2] + "\t" + value[0] + " " + value[1]), new DoubleWritable(getLogLikelihood(key)));
+                    context.write(new Text(value[2] + "\t" + value[0] + " " + value[1]),
+                            new DoubleWritable(getLogLikelihood(key)));
                     counter++;
                 }
             }
@@ -72,7 +73,7 @@ public class LikelihoodMR {
         }
 
         private double getLogLikelihood(Text key) {
-            return Double.valueOf(key.toString().split("\\s+")[1]);
+            return Double.parseDouble(key.toString().split("\\s+")[1]);
         }
     }
 
