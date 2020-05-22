@@ -16,13 +16,14 @@ import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 public class MapReduceToDecades {
     // TODO: 17/05/2020 add Better combiner, add stop words check.
-    public static class MapperClass extends Mapper<Text, GoogleGram, Text, LongWritable> {
+    public static class MapperClass extends Mapper<LongWritable, Text, Text, LongWritable> {
         static Set<String> engStopWords;
         static Set<String> hebStopWords;
 
@@ -45,18 +46,18 @@ public class MapReduceToDecades {
         }
 
         @Override
-        public void map(Text lineId, GoogleGram gram, Context context) throws IOException, InterruptedException {
+        public void map(LongWritable lineId, Text gram, Context context) throws IOException, InterruptedException {
             //Assuming work on 1 gram
-            String[] splitGram = gram.getGram().split("\\s+");
-            if (splitGram.length == 1) {
-                context.write(new Text("1gram:" + splitGram[0] + "\t" + findDecade(gram.getYear())),
-                        new LongWritable((gram.getOccurrences())));
-                context.write(new Text("Decade:" + findDecade(gram.getYear())),
-                        new LongWritable(gram.getOccurrences()));
-            } else if (splitGram.length == 2) { // 2 gram
+            String[] splitGram = gram.toString().split("\\s+");
+            if (splitGram.length == 5) {
+                context.write(new Text("1gram:" + splitGram[0] + "\t" + findDecade(splitGram[1])),
+                        new LongWritable(Long.valueOf(splitGram[2])));
+                context.write(new Text("Decade:" + findDecade(splitGram[1])),
+                        new LongWritable(Long.valueOf(splitGram[2])));
+            } else if (splitGram.length == 6) { // 2 gram
                 if (stopWord(splitGram[0]) || stopWord(splitGram[1])) return;
-                context.write(new Text("2gram:" + splitGram[0] + " " + splitGram[1] + "\t" + findDecade(gram.getYear()))
-                        , new LongWritable(gram.getOccurrences()));
+                context.write(new Text("2gram:" + splitGram[0] + " " + splitGram[1] + "\t" + findDecade(splitGram[2]))
+                        , new LongWritable(Long.valueOf(splitGram[3])));
             }
         }
 
@@ -117,11 +118,12 @@ public class MapReduceToDecades {
         Configuration conf = new Configuration();
 
         Job job = new Job(conf, "gramsUnionAndDecsCalc");
+
         job.setJarByClass(MapReduceToDecades.class);
-        job.setMapperClass(MapperClass.class);
+        job.setMapperClass(MapReduceToDecades.MapperClass.class);
         job.setPartitionerClass(PartitionerClass.class);
 //        job.setCombinerClass(ReducerClass.class);
-        job.setReducerClass(ReducerClass.class);
+        job.setReducerClass(MapReduceToDecades.ReducerClass.class);
         // mapper output
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(LongWritable.class);
@@ -130,19 +132,16 @@ public class MapReduceToDecades {
         job.setOutputValueClass(LongWritable.class);
 
         // job input
-        job.setInputFormatClass(GoogleGramInputFormat.class);
+        job.setInputFormatClass(TextInputFormat.class);
         // job output
-        job.setOutputFormatClass(TextOutputFormat.class);
-        //        Configuration conf = new Configuration();
-//        Job job = new Job(conf, "...");
 
-        job.setInputFormatClass(SequenceFileInputFormat.class);
 
         Path oneGram = new Path(args[0]);
         Path twoGram = new Path(args[1]);
         Path outputPath = new Path(args[2]);
-        MultipleInputs.addInputPath(job, oneGram, GoogleGramInputFormat.class, MapperClass.class);
-        MultipleInputs.addInputPath(job, twoGram, GoogleGramInputFormat.class, MapperClass.class);
+        // TODO: 22/05/2020 Change to SequenceFileInputFormat.class
+        MultipleInputs.addInputPath(job, oneGram, TextInputFormat.class, MapperClass.class);
+        MultipleInputs.addInputPath(job, twoGram, TextInputFormat.class, MapperClass.class);
 
         // Defines additional single text based output 'text' for the job
         MultipleOutputs.addNamedOutput(job, "Decs", TextOutputFormat.class,

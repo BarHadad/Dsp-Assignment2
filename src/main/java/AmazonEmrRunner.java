@@ -48,7 +48,7 @@ public class AmazonEmrRunner {
                 .withName("firstJob")                                   //claster name
                 .withInstances(instances)
                 .withSteps(stepConfigs)
-                .withLogUri("s3n://logsmr/");
+                .withLogUri(Properties.firstLogPath);
 
         runFlowRequest.setServiceRole("EMR_DefaultRole");
         runFlowRequest.setJobFlowRole("EMR_EC2_DefaultRole");
