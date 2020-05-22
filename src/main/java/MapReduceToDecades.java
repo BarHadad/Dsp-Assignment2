@@ -15,6 +15,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
@@ -26,7 +27,7 @@ public class MapReduceToDecades {
         static Set<String> hebStopWords;
 
         @Override
-        protected void setup(Context context) throws IOException, InterruptedException {
+        protected void setup(Context context) throws IOException {
             try (InputStream in = MapReduceToDecades.class.getClassLoader().getResourceAsStream("englishStopWords")) {
                 if (in != null) {
                     engStopWords = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))
@@ -132,6 +133,10 @@ public class MapReduceToDecades {
         job.setInputFormatClass(GoogleGramInputFormat.class);
         // job output
         job.setOutputFormatClass(TextOutputFormat.class);
+        //        Configuration conf = new Configuration();
+//        Job job = new Job(conf, "...");
+
+        job.setInputFormatClass(SequenceFileInputFormat.class);
 
         Path oneGram = new Path(args[0]);
         Path twoGram = new Path(args[1]);
