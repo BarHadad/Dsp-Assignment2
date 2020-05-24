@@ -16,7 +16,6 @@ public class AmazonEmrRunner {
         String [] arguments = new String[]{Properties.firstOneGramPath, Properties.firstTwoGramPath, Properties.firstOutputPath};
         HadoopJarStepConfig hadoopJarStep = new HadoopJarStepConfig()
                 .withJar(Properties.firstJarPath) // This should be a full map reduce application.
-//                .withMainClass("MapReduceToDecades.MainClass")    // not needed if we are using jar.
                 .withArgs(arguments); // A list of command line args passed to the jar files main function when executed
 
         List<StepConfig> stepConfigs = new ArrayList<>();
