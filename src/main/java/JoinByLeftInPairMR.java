@@ -13,7 +13,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.IOException;
 
-public class JoinTablesMR {
+public class JoinByLeftInPairMR {
     static String ONE_GRAM_TAG = "1gram";
     static String TWO_GRAM_TAG = "2gram";
 
@@ -73,7 +73,7 @@ public class JoinTablesMR {
 
         Configuration conf = new Configuration();
         Job job = new Job(conf, "joinTables");
-        job.setJarByClass(JoinTablesMR.class);
+        job.setJarByClass(JoinByLeftInPairMR.class);
         job.setMapperClass(MapperClass.class);
         job.setPartitionerClass(PartitionerClass.class);
 //        job.setCombinerClass(ReducerClass.class);

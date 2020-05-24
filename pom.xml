@@ -25,15 +25,18 @@
     </dependencyManagement>
 
     <dependencies>
+
+        <!--not good-->
+        <!--<dependency>-->
+        <!--<groupId>com.amazonaws</groupId>-->
+        <!--<artifactId>aws-java-sdk</artifactId>-->
+        <!--<version>1.11.327</version>-->
+        <!--</dependency>-->
+
         <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk</artifactId>
-        <version>1.11.327</version>
-        </dependency>
-        <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-emr</artifactId>
-        <version>1.11.327</version>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-emr</artifactId>
+            <version>1.11.327</version>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>

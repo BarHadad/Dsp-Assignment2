@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -20,7 +21,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
-public class MapReduceToDecades {
+public class FirstCountWithDecadeMR {
     // TODO: 17/05/2020 add Better combiner, add stop words check.
     public static class MapperClass extends Mapper<LongWritable, Text, Text, LongWritable> {
         static Set<String> engStopWords;
@@ -28,14 +29,14 @@ public class MapReduceToDecades {
 
         @Override
         protected void setup(Context context) throws IOException {
-            try (InputStream in = MapReduceToDecades.class.getClassLoader().getResourceAsStream("englishStopWords")) {
+            try (InputStream in = FirstCountWithDecadeMR.class.getClassLoader().getResourceAsStream("englishStopWords")) {
                 if (in != null) {
                     engStopWords = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))
                             .lines()
                             .collect(Collectors.toSet());
                 }
             }
-            try (InputStream in = MapReduceToDecades.class.getClassLoader().getResourceAsStream("englishStopWords")) {
+            try (InputStream in = FirstCountWithDecadeMR.class.getClassLoader().getResourceAsStream("hebrewStopWords")) {
                 if (in != null) {
                     hebStopWords = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))
                             .lines()
@@ -61,7 +62,8 @@ public class MapReduceToDecades {
         }
 
         private boolean stopWord(String word) {
-            return engStopWords.contains(word) || hebStopWords.contains(word);
+            return (CollectionUtils.isNotEmpty(engStopWords) && engStopWords.contains(word))
+                    || (CollectionUtils.isNotEmpty(hebStopWords) && hebStopWords.contains(word));
         }
 
         private String findDecade(String word) {
@@ -118,11 +120,11 @@ public class MapReduceToDecades {
 
         Job job = new Job(conf, "gramsUnionAndDecsCalc");
 
-        job.setJarByClass(MapReduceToDecades.class);
-        job.setMapperClass(MapReduceToDecades.MapperClass.class);
+        job.setJarByClass(FirstCountWithDecadeMR.class);
+        job.setMapperClass(FirstCountWithDecadeMR.MapperClass.class);
         job.setPartitionerClass(PartitionerClass.class);
 //        job.setCombinerClass(ReducerClass.class);
-        job.setReducerClass(MapReduceToDecades.ReducerClass.class);
+        job.setReducerClass(FirstCountWithDecadeMR.ReducerClass.class);
         // mapper output
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(LongWritable.class);

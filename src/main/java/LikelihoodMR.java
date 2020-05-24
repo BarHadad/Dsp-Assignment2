@@ -31,17 +31,18 @@ public class LikelihoodMR {
         }
 
         private double calculateLogLikelihood(double c1, double c2, double c12, double N) {
-            double p = c2 /N;
-            double p1 = c12 /c1;
-            double p2 = (c2-c12)/(N - c1);
+            double p = c2 / N;
+            double p1 = c12 / c1;
+            double p2 = (c2 - c12) / (N - c1);
             double res =
-                  log(L(c12, c1, p)) +
-                    log(L(c2 - c12, N - c1, p)) -
-                        log(L(c12, c1, p1)) -
+                    log(L(c12, c1, p)) +
+                            log(L(c2 - c12, N - c1, p)) -
+                            log(L(c12, c1, p1)) -
                             log(L(c2 - c12, N - c1, p2));
             return res;
 
         }
+
         private double L(double k, double n, double x) {
             return (pow(x, k) * pow(1 - x, n - k));
         }
@@ -58,13 +59,12 @@ public class LikelihoodMR {
                 curDecade = getDecade(key);
                 counter = 0;
             }
-            if (counter < 100) {
-                for (Text val : values) {
-                    String[] value = val.toString().split("\\s+");
-                    context.write(new Text(value[2] + "\t" + value[0] + " " + value[1]),
-                            new DoubleWritable(getLogLikelihood(key)));
-                    counter++;
-                }
+            for (Text val : values) {
+                if (counter == 100) return;
+                String[] value = val.toString().split("\\s+");
+                context.write(new Text(value[2] + "\t" + value[0] + " " + value[1]),
+                        new DoubleWritable(getLogLikelihood(key)));
+                counter++;
             }
         }
 

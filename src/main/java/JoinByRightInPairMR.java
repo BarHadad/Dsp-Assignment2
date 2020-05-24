@@ -13,9 +13,9 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.IOException;
 
-public class JoinN {
-    static String ONE_TAG = "#1";
-    static String TWO_TAG = "#2";
+public class JoinByRightInPairMR {
+    static String ONE_GRAM_TAG = "1gram";
+    static String TWO_GRAM_TAG = "2gram";
 
     public static class MapperClass extends Mapper<LongWritable, Text, Text, Text> {
 
@@ -23,11 +23,11 @@ public class JoinN {
         public void map(LongWritable lineId, Text line, Context context) throws IOException, InterruptedException {
             String[] words = line.toString().split("\\s+");
             //Assuming work on 1 gram
-            if (words.length == 2) { // N table
-                Text nKey = new Text(words[0] + ONE_TAG);
-                context.write(nKey, new Text(line));
+            if (words.length == 3) { // Reading from 1Gram
+                Text onrGramKey = new Text(words[0] + "\t" + words[1] + "\t" + ONE_GRAM_TAG);
+                context.write(onrGramKey, new Text(line));
             } else { // Reading from 2Gram, take the second word
-                Text twoGramKey = new Text(words[2] + TWO_TAG);
+                Text twoGramKey = new Text(words[1] + "\t" + words[2] + "\t" + TWO_GRAM_TAG);
                 context.write(twoGramKey, new Text(line));
             }
         }
@@ -35,17 +35,30 @@ public class JoinN {
     }
 
     public static class ReducerClass extends Reducer<Text, Text, Text, LongWritable> {
-        static long curDecadeN;
+        static String currentKey;
+        static long oneGramCounter;
 
         @Override
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            if (key.toString().endsWith(ONE_TAG)) {
-                curDecadeN = Long.valueOf(values.iterator().next().toString().split("\\s+")[1]);
-            } else {
-                for (Text val : values) {
-                    context.write(val, new LongWritable(curDecadeN));
+            String nonTaggedKey = removeTag(key);
+            if (!nonTaggedKey.equals(currentKey)) {
+                currentKey = nonTaggedKey;
+                oneGramCounter = 0;
+            }
+            if (key.toString().endsWith(ONE_GRAM_TAG)) {
+                String[] oneGramData = (values.iterator().next().toString().split("\\s+"));
+                oneGramCounter = Long.valueOf(oneGramData[2]);
+            } else { //2gram
+                for (Text pair : values) {
+                    context.write(pair, new LongWritable(oneGramCounter));
                 }
             }
+        }
+
+        private String removeTag(Text key) {
+            if (key.toString().endsWith(ONE_GRAM_TAG))
+                return key.toString().substring(0, key.toString().indexOf(ONE_GRAM_TAG));
+            else return key.toString().substring(0, key.toString().indexOf(TWO_GRAM_TAG));
         }
     }
 
@@ -54,7 +67,6 @@ public class JoinN {
         public int getPartition(Text key, Text value, int numPartitions) {
             return key.hashCode() % numPartitions;
         }
-
     }
 
     public static void main(String[] args) throws Exception {
@@ -62,7 +74,7 @@ public class JoinN {
 
         Configuration conf = new Configuration();
         Job job = new Job(conf, "joinTables");
-        job.setJarByClass(JoinN.class);
+        job.setJarByClass(JoinByRightInPairMR.class);
         job.setMapperClass(MapperClass.class);
         job.setPartitionerClass(PartitionerClass.class);
 //        job.setCombinerClass(ReducerClass.class);
