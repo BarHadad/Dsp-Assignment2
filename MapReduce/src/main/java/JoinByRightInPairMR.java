@@ -13,7 +13,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.IOException;
 
-public class JoinByLeftInPairMR {
+public class JoinByRightInPairMR {
     static String ONE_GRAM_TAG = "1gram";
     static String TWO_GRAM_TAG = "2gram";
 
@@ -26,11 +26,12 @@ public class JoinByLeftInPairMR {
             if (words.length == 3) { // Reading from 1Gram
                 Text onrGramKey = new Text(words[0] + "\t" + words[1] + "\t" + ONE_GRAM_TAG);
                 context.write(onrGramKey, new Text(line));
-            } else { // Reading from 2Gram, take the first word
-                Text twoGramKey = new Text(words[0] + "\t" + words[2] + "\t" + TWO_GRAM_TAG);
+            } else { // Reading from 2Gram, take the second word
+                Text twoGramKey = new Text(words[1] + "\t" + words[2] + "\t" + TWO_GRAM_TAG);
                 context.write(twoGramKey, new Text(line));
             }
         }
+
     }
 
     public static class ReducerClass extends Reducer<Text, Text, Text, LongWritable> {
@@ -47,7 +48,7 @@ public class JoinByLeftInPairMR {
             if (key.toString().endsWith(ONE_GRAM_TAG)) {
                 String[] oneGramData = (values.iterator().next().toString().split("\\s+"));
                 oneGramCounter = Long.valueOf(oneGramData[2]);
-            } else {
+            } else { //2gram
                 for (Text pair : values) {
                     context.write(pair, new LongWritable(oneGramCounter));
                 }
@@ -64,7 +65,7 @@ public class JoinByLeftInPairMR {
     public static class PartitionerClass extends Partitioner<Text, Text> {
         @Override
         public int getPartition(Text key, Text value, int numPartitions) {
-            return key.hashCode() % numPartitions;
+            return (key.hashCode() & Integer.MAX_VALUE) % numPartitions;
         }
     }
 
@@ -73,7 +74,7 @@ public class JoinByLeftInPairMR {
 
         Configuration conf = new Configuration();
         Job job = new Job(conf, "joinTables");
-        job.setJarByClass(JoinByLeftInPairMR.class);
+        job.setJarByClass(JoinByRightInPairMR.class);
         job.setMapperClass(MapperClass.class);
         job.setPartitionerClass(PartitionerClass.class);
 //        job.setCombinerClass(ReducerClass.class);

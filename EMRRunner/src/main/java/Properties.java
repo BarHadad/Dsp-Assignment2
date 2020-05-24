@@ -1,11 +1,13 @@
 public class Properties {
     public static String keyPair = "imacKey";
-    public static String firstJarPath = "s3://2inputs/dsp2.jar";
+    public static String firstJarPath = "s3://2inputs/MapReduce.jar";
     public static String firstLogPath = "s3n://logsmr/";
 
     // step1 - first decade count
-    public static String FirstOneGramPath = "s3n://2inputs/1grams";
-    public static String FirstTwoGramPath = "s3n://2inputs/2grams";
+    // for EMR: s3://datasets.elasticmapreduce/ngrams/books/20090715/heb-all/1gram/data";
+    // s3://datasets.elasticmapreduce/ngrams/books/20090715/heb-all/2gram/data";
+    public static String FirstOneGramPath = "s3://datasets.elasticmapreduce/ngrams/books/20090715/eng-us-all/1gram/data";
+    public static String FirstTwoGramPath = "s3://datasets.elasticmapreduce/ngrams/books/20090715/eng-us-all/2gram/data";
     public static String FirstOutputPath = "s3n://2outputbucket/FirstCountWithDecadeMR_out";
 
     // step2 - join be left

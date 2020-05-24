@@ -45,7 +45,7 @@ public class AmazonEmrRunner {
 
         // run
         RunJobFlowRequest runFlowRequest = new RunJobFlowRequest()      // collection of steps
-                .withName("google books")                                   //cluster name
+                .withName("Full Run Big Data")                                   //cluster name
                 .withInstances(defineInstances())
                 .withSteps(stepConfigs)
                 .withLogUri(Properties.firstLogPath);
@@ -60,7 +60,7 @@ public class AmazonEmrRunner {
 
     private static JobFlowInstancesConfig defineInstances() {
         return new JobFlowInstancesConfig()
-                .withInstanceCount(2)
+                .withInstanceCount(9)
                 .withMasterInstanceType(InstanceType.M4Large.toString())
                 .withSlaveInstanceType(InstanceType.M4Large.toString())
                 .withHadoopVersion("2.7.3").withEc2KeyName(Properties.keyPair)

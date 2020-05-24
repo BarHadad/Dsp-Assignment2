@@ -16,13 +16,14 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 public class FirstCountWithDecadeMR {
-    // TODO: 17/05/2020 add Better combiner, add stop words check.
+    // TODO: 17/05/2020 add combiner
     public static class MapperClass extends Mapper<LongWritable, Text, Text, LongWritable> {
         static Set<String> engStopWords;
         static Set<String> hebStopWords;
@@ -48,7 +49,7 @@ public class FirstCountWithDecadeMR {
         @Override
         public void map(LongWritable lineId, Text gram, Context context) throws IOException, InterruptedException {
             //Assuming work on 1 gram
-            String[] splitGram = gram.toString().split("\\s+");
+            String[] splitGram = gram.toString().trim().split("\\s+");
             if (splitGram.length == 5) {
                 context.write(new Text("1gram:" + splitGram[0] + "\t" + findDecade(splitGram[1])),
                         new LongWritable(Long.valueOf(splitGram[2])));
@@ -56,7 +57,8 @@ public class FirstCountWithDecadeMR {
                         new LongWritable(Long.valueOf(splitGram[2])));
             } else if (splitGram.length == 6) { // 2 gram
                 if (stopWord(splitGram[0]) || stopWord(splitGram[1])) return;
-                context.write(new Text("2gram:" + splitGram[0] + " " + splitGram[1] + "\t" + findDecade(splitGram[2]))
+                String textVal = "2gram:" + splitGram[0] + " " + splitGram[1] + "\t" + findDecade(splitGram[2]);
+                context.write(new Text(new String(textVal.getBytes(), StandardCharsets.UTF_8))
                         , new LongWritable(Long.valueOf(splitGram[3])));
             }
         }
@@ -110,7 +112,9 @@ public class FirstCountWithDecadeMR {
     public static class PartitionerClass extends Partitioner<Text, LongWritable> {
         @Override
         public int getPartition(Text key, LongWritable value, int numPartitions) {
-            return key.hashCode() % numPartitions;
+            int partition = (key.hashCode() & Integer.MAX_VALUE) % numPartitions;
+            System.out.println(partition);
+            return partition;
         }
     }
 
@@ -133,16 +137,17 @@ public class FirstCountWithDecadeMR {
         job.setOutputValueClass(LongWritable.class);
 
         // job input
-        job.setInputFormatClass(TextInputFormat.class);
+//        job.setInputFormatClass(SequenceFileInputFormat.class);
         // job output
 
 
         Path oneGram = new Path(args[0]);
         Path twoGram = new Path(args[1]);
         Path outputPath = new Path(args[2]);
-        // TODO: 22/05/2020 Change to SequenceFileInputFormat.class
-        MultipleInputs.addInputPath(job, oneGram, TextInputFormat.class, MapperClass.class);
-        MultipleInputs.addInputPath(job, twoGram, TextInputFormat.class, MapperClass.class);
+
+//        SequenceFileInputFormat
+        MultipleInputs.addInputPath(job, oneGram, SequenceFileInputFormat.class, MapperClass.class);
+        MultipleInputs.addInputPath(job, twoGram, SequenceFileInputFormat.class, MapperClass.class);
 
         // Defines additional single text based output 'text' for the job
         MultipleOutputs.addNamedOutput(job, "Decs", TextOutputFormat.class,
