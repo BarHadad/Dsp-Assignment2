@@ -46,7 +46,7 @@ public class JoinByLeftInPairMR {
             }
             if (key.toString().endsWith(ONE_GRAM_TAG)) {
                 String[] oneGramData = (values.iterator().next().toString().split("\\s+"));
-                oneGramCounter = Long.valueOf(oneGramData[2]);
+                oneGramCounter = Long.parseLong(oneGramData[2]);
             } else {
                 for (Text pair : values) {
                     context.write(pair, new LongWritable(oneGramCounter));
@@ -54,23 +54,22 @@ public class JoinByLeftInPairMR {
             }
         }
 
-        private String removeTag(Text key) {
-            if (key.toString().endsWith(ONE_GRAM_TAG))
-                return key.toString().substring(0, key.toString().indexOf(ONE_GRAM_TAG));
-            else return key.toString().substring(0, key.toString().indexOf(TWO_GRAM_TAG));
-        }
     }
 
     public static class PartitionerClass extends Partitioner<Text, Text> {
         @Override
         public int getPartition(Text key, Text value, int numPartitions) {
-            return (key.hashCode() & Integer.MAX_VALUE) % numPartitions;
+            return (removeTag(key).hashCode() & Integer.MAX_VALUE) % numPartitions;
         }
     }
 
+    public static String removeTag(Text key) {
+        if (key.toString().endsWith(ONE_GRAM_TAG))
+            return key.toString().substring(0, key.toString().indexOf(ONE_GRAM_TAG));
+        else return key.toString().substring(0, key.toString().indexOf(TWO_GRAM_TAG));
+    }
+
     public static void main(String[] args) throws Exception {
-
-
         Configuration conf = new Configuration();
         Job job = new Job(conf, "joinTables");
         job.setJarByClass(JoinByLeftInPairMR.class);
@@ -91,22 +90,10 @@ public class JoinByLeftInPairMR {
         Path outputPath = new Path(args[2]);
         MultipleInputs.addInputPath(job, oneGram, TextInputFormat.class, MapperClass.class);
         MultipleInputs.addInputPath(job, twoGram, TextInputFormat.class, MapperClass.class);
-//        MultipleInputs.addInputPath(job, decs, TextInputFormat.class, MapperClass.class);
 
         FileOutputFormat.setOutputPath(job, outputPath);
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
-
-//        // Defines additional single text based output 'text' for the job
-//        MultipleOutputs.addNamedOutput(job, "Decs", TextOutputFormat.class,
-//                Text.class, LongWritable.class);
-//
-//        // Defines additional sequence-file based output 'sequence' for the job
-//        MultipleOutputs.addNamedOutput(job, "1gram", TextOutputFormat.class,
-//                Text.class, LongWritable.class);
-//
-//        MultipleOutputs.addNamedOutput(job, "2gram", TextOutputFormat.class,
-//                Text.class, LongWritable.class);
 
     }
 }

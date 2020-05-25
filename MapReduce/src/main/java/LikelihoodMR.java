@@ -77,10 +77,12 @@ public class LikelihoodMR {
         }
     }
 
+    // ensure all data for specific decade will reach the same reducer
     public static class PartitionerClass extends Partitioner<Text, Text> {
         @Override
         public int getPartition(Text key, Text value, int numPartitions) {
-            return (key.hashCode() & Integer.MAX_VALUE) % numPartitions;
+            String decadeOnly = key.toString().split("\\s+")[0];
+            return (decadeOnly.hashCode() & Integer.MAX_VALUE) % numPartitions;
         }
 
     }

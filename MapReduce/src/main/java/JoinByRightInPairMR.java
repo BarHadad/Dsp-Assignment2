@@ -47,26 +47,27 @@ public class JoinByRightInPairMR {
             }
             if (key.toString().endsWith(ONE_GRAM_TAG)) {
                 String[] oneGramData = (values.iterator().next().toString().split("\\s+"));
-                oneGramCounter = Long.valueOf(oneGramData[2]);
+                oneGramCounter = Long.parseLong(oneGramData[2]);
             } else { //2gram
                 for (Text pair : values) {
                     context.write(pair, new LongWritable(oneGramCounter));
                 }
             }
         }
-
-        private String removeTag(Text key) {
-            if (key.toString().endsWith(ONE_GRAM_TAG))
-                return key.toString().substring(0, key.toString().indexOf(ONE_GRAM_TAG));
-            else return key.toString().substring(0, key.toString().indexOf(TWO_GRAM_TAG));
-        }
     }
 
     public static class PartitionerClass extends Partitioner<Text, Text> {
         @Override
         public int getPartition(Text key, Text value, int numPartitions) {
-            return (key.hashCode() & Integer.MAX_VALUE) % numPartitions;
+            return (removeTag(key).hashCode() & Integer.MAX_VALUE) % numPartitions;
         }
+
+    }
+
+    public static String removeTag(Text key) {
+        if (key.toString().endsWith(ONE_GRAM_TAG))
+            return key.toString().substring(0, key.toString().indexOf(ONE_GRAM_TAG));
+        else return key.toString().substring(0, key.toString().indexOf(TWO_GRAM_TAG));
     }
 
     public static void main(String[] args) throws Exception {

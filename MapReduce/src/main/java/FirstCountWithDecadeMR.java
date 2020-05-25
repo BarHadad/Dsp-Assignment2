@@ -17,13 +17,11 @@ import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 public class FirstCountWithDecadeMR {
-    // TODO: 17/05/2020 add combiner
     public static class MapperClass extends Mapper<LongWritable, Text, Text, LongWritable> {
         static Set<String> engStopWords;
         static Set<String> hebStopWords;
@@ -50,16 +48,18 @@ public class FirstCountWithDecadeMR {
         public void map(LongWritable lineId, Text gram, Context context) throws IOException, InterruptedException {
             //Assuming work on 1 gram
             String[] splitGram = gram.toString().trim().split("\\s+");
+            if (stopWord(splitGram[0]) || stopWord(splitGram[1])) return;
+
             if (splitGram.length == 5) {
                 context.write(new Text("1gram:" + splitGram[0] + "\t" + findDecade(splitGram[1])),
-                        new LongWritable(Long.valueOf(splitGram[2])));
+                        new LongWritable(Long.parseLong(splitGram[2])));
+
                 context.write(new Text("Decade:" + findDecade(splitGram[1])),
-                        new LongWritable(Long.valueOf(splitGram[2])));
+                        new LongWritable(Long.parseLong(splitGram[2])));
             } else if (splitGram.length == 6) { // 2 gram
-                if (stopWord(splitGram[0]) || stopWord(splitGram[1])) return;
                 String textVal = "2gram:" + splitGram[0] + " " + splitGram[1] + "\t" + findDecade(splitGram[2]);
                 context.write(new Text(new String(textVal.getBytes(), StandardCharsets.UTF_8))
-                        , new LongWritable(Long.valueOf(splitGram[3])));
+                        , new LongWritable(Long.parseLong(splitGram[3])));
             }
         }
 
@@ -91,16 +91,16 @@ public class FirstCountWithDecadeMR {
                 }
                 String newKey;
                 newKey = sKey.substring("Decade:".length());
-                mo.write(new Text(newKey), new LongWritable(decadeCount), "Decs");
+                mo.write(new Text(newKey), new LongWritable(decadeCount), "Decs/dec");
             } else {
                 int sum = 0;
                 for (LongWritable value : values) {
                     sum += value.get();
                 }
                 if (sKey.toString().startsWith("1gram:"))
-                    mo.write(new Text(sKey.substring("1gram:".length())), new LongWritable(sum), "1gram");
+                    mo.write(new Text(sKey.substring("1gram:".length())), new LongWritable(sum), "1grams/1gram");
                 else
-                    mo.write(new Text(sKey.substring("2gram:".length())), new LongWritable(sum), "2gram");
+                    mo.write(new Text(sKey.substring("2gram:".length())), new LongWritable(sum), "2grams/2gram");
             }
         }
 
@@ -127,7 +127,7 @@ public class FirstCountWithDecadeMR {
         job.setJarByClass(FirstCountWithDecadeMR.class);
         job.setMapperClass(FirstCountWithDecadeMR.MapperClass.class);
         job.setPartitionerClass(PartitionerClass.class);
-//        job.setCombinerClass(ReducerClass.class);
+        job.setCombinerClass(ReducerClass.class);
         job.setReducerClass(FirstCountWithDecadeMR.ReducerClass.class);
         // mapper output
         job.setMapOutputKeyClass(Text.class);
@@ -137,9 +137,8 @@ public class FirstCountWithDecadeMR {
         job.setOutputValueClass(LongWritable.class);
 
         // job input
-//        job.setInputFormatClass(SequenceFileInputFormat.class);
+//        job.setInputFormatClass(FileInputFormat.class);
         // job output
-
 
         Path oneGram = new Path(args[0]);
         Path twoGram = new Path(args[1]);

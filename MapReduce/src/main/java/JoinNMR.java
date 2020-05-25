@@ -14,8 +14,8 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import java.io.IOException;
 
 public class JoinNMR {
-    static String ONE_TAG = "#1";
-    static String TWO_TAG = "#2";
+    static String ONE_GRAM_TAG = "1gram";
+    static String TWO_GRAM_TAG = "2gram";
 
     public static class MapperClass extends Mapper<LongWritable, Text, Text, Text> {
 
@@ -24,10 +24,10 @@ public class JoinNMR {
             String[] words = line.toString().split("\\s+");
             //Assuming work on 1 gram
             if (words.length == 2) { // N table
-                Text nKey = new Text(words[0] + ONE_TAG);
+                Text nKey = new Text(words[0] + ONE_GRAM_TAG);
                 context.write(nKey, new Text(line));
             } else { // Reading from 2Gram, take the second word
-                Text twoGramKey = new Text(words[2] + TWO_TAG);
+                Text twoGramKey = new Text(words[2] + TWO_GRAM_TAG);
                 context.write(twoGramKey, new Text(line));
             }
         }
@@ -39,8 +39,8 @@ public class JoinNMR {
 
         @Override
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            if (key.toString().endsWith(ONE_TAG)) {
-                curDecadeN = Long.valueOf(values.iterator().next().toString().split("\\s+")[1]);
+            if (key.toString().endsWith(ONE_GRAM_TAG)) {
+                curDecadeN = Long.parseLong(values.iterator().next().toString().split("\\s+")[1]);
             } else {
                 for (Text val : values) {
                     context.write(val, new LongWritable(curDecadeN));
@@ -52,9 +52,15 @@ public class JoinNMR {
     public static class PartitionerClass extends Partitioner<Text, Text> {
         @Override
         public int getPartition(Text key, Text value, int numPartitions) {
-            return (key.hashCode() & Integer.MAX_VALUE) % numPartitions;
+            return (removeTag(key).hashCode() & Integer.MAX_VALUE) % numPartitions;
         }
 
+    }
+
+    public static String removeTag(Text key) {
+        if (key.toString().endsWith(ONE_GRAM_TAG))
+            return key.toString().substring(0, key.toString().indexOf(ONE_GRAM_TAG));
+        else return key.toString().substring(0, key.toString().indexOf(TWO_GRAM_TAG));
     }
 
     public static void main(String[] args) throws Exception {
