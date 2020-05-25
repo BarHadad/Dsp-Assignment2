@@ -40,7 +40,6 @@ public class LikelihoodMR {
                             log(L(c12, c1, p1)) -
                             log(L(c2 - c12, N - c1, p2));
             return res;
-
         }
 
         private double L(double k, double n, double x) {
@@ -59,7 +58,7 @@ public class LikelihoodMR {
                 curDecade = getDecade(key);
                 counter = 0;
             }
-            for (Text val : values) {
+            for (Text val : values) {   // Take the first 100 = the biggest (as a result of shuffle & sort)
                 if (counter == 100) return;
                 String[] value = val.toString().split("\\s+");
                 context.write(new Text(value[2] + "\t" + value[0] + " " + value[1]),

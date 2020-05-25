@@ -50,6 +50,8 @@ public class JoinByRightInPairMR {
                 oneGramCounter = Long.parseLong(oneGramData[2]);
             } else { //2gram
                 for (Text pair : values) {
+                    // For example: <itzik shamli 20-29 2> -> <itzik shamli 20-29 2 3> (3 - "shamli" word count)
+
                     context.write(pair, new LongWritable(oneGramCounter));
                 }
             }
@@ -98,17 +100,6 @@ public class JoinByRightInPairMR {
         FileOutputFormat.setOutputPath(job, outputPath);
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
-
-//        // Defines additional single text based output 'text' for the job
-//        MultipleOutputs.addNamedOutput(job, "Decs", TextOutputFormat.class,
-//                Text.class, LongWritable.class);
-//
-//        // Defines additional sequence-file based output 'sequence' for the job
-//        MultipleOutputs.addNamedOutput(job, "1gram", TextOutputFormat.class,
-//                Text.class, LongWritable.class);
-//
-//        MultipleOutputs.addNamedOutput(job, "2gram", TextOutputFormat.class,
-//                Text.class, LongWritable.class);
 
     }
 }

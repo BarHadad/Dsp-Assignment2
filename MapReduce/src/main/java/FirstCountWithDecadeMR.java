@@ -26,6 +26,11 @@ public class FirstCountWithDecadeMR {
         static Set<String> engStopWords;
         static Set<String> hebStopWords;
 
+        /**
+         * Load Stop Words to memory.
+         * @param context
+         * @throws IOException
+         */
         @Override
         protected void setup(Context context) throws IOException {
             try (InputStream in = FirstCountWithDecadeMR.class.getClassLoader().getResourceAsStream("englishStopWords")) {
@@ -44,22 +49,23 @@ public class FirstCountWithDecadeMR {
             }
         }
 
+
         @Override
         public void map(LongWritable lineId, Text gram, Context context) throws IOException, InterruptedException {
             //Assuming work on 1 gram
-            String[] splitGram = gram.toString().trim().split("\\s+");
+            String[] splitGram = gram.toString().trim().split("\\s+");  // Line from 1/2 gram
             if (stopWord(splitGram[0]) || stopWord(splitGram[1])) return;
 
-            if (splitGram.length == 5) {
+            if (splitGram.length == 5) {    // 1Gram
                 context.write(new Text("1gram:" + splitGram[0] + "\t" + findDecade(splitGram[1])),
-                        new LongWritable(Long.parseLong(splitGram[2])));
+                        new LongWritable(Long.parseLong(splitGram[2]))); //sent "<1gram:word 2020-2029, count>"
 
                 context.write(new Text("Decade:" + findDecade(splitGram[1])),
-                        new LongWritable(Long.parseLong(splitGram[2])));
-            } else if (splitGram.length == 6) { // 2 gram
+                        new LongWritable(Long.parseLong(splitGram[2]))); //Sent "<Decade: 2020-2029, count>"
+            } else if (splitGram.length == 6) { // 2Gram
                 String textVal = "2gram:" + splitGram[0] + " " + splitGram[1] + "\t" + findDecade(splitGram[2]);
                 context.write(new Text(new String(textVal.getBytes(), StandardCharsets.UTF_8))
-                        , new LongWritable(Long.parseLong(splitGram[3])));
+                        , new LongWritable(Long.parseLong(splitGram[3]))); //Sent <"word1 word2 \t 2020-2029, count> "
             }
         }
 
@@ -85,16 +91,16 @@ public class FirstCountWithDecadeMR {
         public void reduce(Text key, Iterable<LongWritable> values, Context context) throws IOException, InterruptedException {
             long decadeCount = 0;
             StringBuilder sKey = new StringBuilder(key.toString());
-            if (sKey.toString().startsWith("Decade:")) {
+            if (sKey.toString().startsWith("Decade:")) {    // Count for each decade
                 for (LongWritable count : values) {
                     decadeCount += count.get();
                 }
                 String newKey;
                 newKey = sKey.substring("Decade:".length());
                 mo.write(new Text(newKey), new LongWritable(decadeCount), "Decs/dec");
-            } else {
+            } else {    // 1Gram or 2Gram case
                 int sum = 0;
-                for (LongWritable value : values) {
+                for (LongWritable value : values) { // Word Count
                     sum += value.get();
                 }
                 if (sKey.toString().startsWith("1gram:"))

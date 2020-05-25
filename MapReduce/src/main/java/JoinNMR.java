@@ -42,7 +42,7 @@ public class JoinNMR {
             if (key.toString().endsWith(ONE_GRAM_TAG)) {
                 curDecadeN = Long.parseLong(values.iterator().next().toString().split("\\s+")[1]);
             } else {
-                for (Text val : values) {
+                for (Text val : values) {   // count for each bigram the corresponding N
                     context.write(val, new LongWritable(curDecadeN));
                 }
             }

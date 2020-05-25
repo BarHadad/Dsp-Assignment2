@@ -40,15 +40,17 @@ public class JoinByLeftInPairMR {
         @Override
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             String nonTaggedKey = removeTag(key);
-            if (!nonTaggedKey.equals(currentKey)) {
+            if (!nonTaggedKey.equals(currentKey)) { // Restore fields for each 1Gram
                 currentKey = nonTaggedKey;
                 oneGramCounter = 0;
             }
             if (key.toString().endsWith(ONE_GRAM_TAG)) {
                 String[] oneGramData = (values.iterator().next().toString().split("\\s+"));
                 oneGramCounter = Long.parseLong(oneGramData[2]);
-            } else {
+            } else {                               // 2Gram
                 for (Text pair : values) {
+                    // Write the line with the word count added to the right.
+                    // For example: <itzik shamli 20-29 2> -> <itzik shamli 20-29 2 3> (3 - "itzik" word count)
                     context.write(pair, new LongWritable(oneGramCounter));
                 }
             }
