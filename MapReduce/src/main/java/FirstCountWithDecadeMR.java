@@ -28,6 +28,7 @@ public class FirstCountWithDecadeMR {
 
         /**
          * Load Stop Words to memory.
+         *
          * @param context
          * @throws IOException
          */
@@ -83,12 +84,11 @@ public class FirstCountWithDecadeMR {
     public static class CombinerClass extends Reducer<Text, LongWritable, Text, LongWritable> {
         @Override
         public void reduce(Text key, Iterable<LongWritable> values, Context context) throws IOException, InterruptedException {
-            String sKey = key.toString();
             long sum = 0;
             for (LongWritable value : values) {
                 sum += value.get();
             }
-            context.write(new Text(sKey), new LongWritable(sum));
+            context.write(new Text(key.toString()), new LongWritable(sum));
         }
     }
 

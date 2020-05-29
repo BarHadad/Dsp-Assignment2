@@ -24,8 +24,8 @@ public class JoinByRightInPairMR {
             String[] words = line.toString().split("\\s+");
             //Assuming work on 1 gram
             if (words.length == 3) { // Reading from 1Gram
-                Text onrGramKey = new Text(words[0] + "\t" + words[1] + "\t" + ONE_GRAM_TAG);
-                context.write(onrGramKey, new Text(line));
+                Text oneGramKey = new Text(words[0] + "\t" + words[1] + "\t" + ONE_GRAM_TAG);
+                context.write(oneGramKey, new Text(line));
             } else { // Reading from 2Gram, take the second word
                 Text twoGramKey = new Text(words[1] + "\t" + words[2] + "\t" + TWO_GRAM_TAG);
                 context.write(twoGramKey, new Text(line));
