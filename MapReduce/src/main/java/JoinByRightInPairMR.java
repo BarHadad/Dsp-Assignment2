@@ -51,7 +51,6 @@ public class JoinByRightInPairMR {
             } else { //2gram
                 for (Text pair : values) {
                     // For example: <itzik shamli 20-29 2> -> <itzik shamli 20-29 2 3> (3 - "shamli" word count)
-
                     context.write(pair, new LongWritable(oneGramCounter));
                 }
             }

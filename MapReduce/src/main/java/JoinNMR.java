@@ -21,7 +21,7 @@ public class JoinNMR {
 
         @Override
         public void map(LongWritable lineId, Text line, Context context) throws IOException, InterruptedException {
-            String[] words = line.toString().split("\\s+");
+            String[] words = line.toString().trim().split("\\s+");
             //Assuming work on 1 gram
             if (words.length == 2) { // N table
                 Text nKey = new Text(words[0] + ONE_GRAM_TAG);
@@ -91,17 +91,6 @@ public class JoinNMR {
         FileOutputFormat.setOutputPath(job, outputPath);
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
-
-//        // Defines additional single text based output 'text' for the job
-//        MultipleOutputs.addNamedOutput(job, "Decs", TextOutputFormat.class,
-//                Text.class, LongWritable.class);
-//
-//        // Defines additional sequence-file based output 'sequence' for the job
-//        MultipleOutputs.addNamedOutput(job, "1gram", TextOutputFormat.class,
-//                Text.class, LongWritable.class);
-//
-//        MultipleOutputs.addNamedOutput(job, "2gram", TextOutputFormat.class,
-//                Text.class, LongWritable.class);
 
     }
 }

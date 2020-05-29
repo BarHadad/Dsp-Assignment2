@@ -14,7 +14,8 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.IOException;
 
-import static java.lang.Math.*;
+import static java.lang.Math.log;
+import static java.lang.Math.pow;
 
 public class LikelihoodMR {
 
@@ -22,7 +23,7 @@ public class LikelihoodMR {
 
         @Override
         public void map(LongWritable lineId, Text line, Context context) throws IOException, InterruptedException {
-            String[] words = line.toString().split("\\s+");
+            String[] words = line.toString().trim().split("\\s+");
             //Assuming work on 1 gram
             double ll = calculateLogLikelihood(Double.parseDouble(words[4]), Double.parseDouble(words[5]),
                     Double.parseDouble(words[3]), Double.parseDouble(words[6]));

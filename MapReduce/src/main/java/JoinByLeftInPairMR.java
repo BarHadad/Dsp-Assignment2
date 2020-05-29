@@ -21,7 +21,7 @@ public class JoinByLeftInPairMR {
 
         @Override
         public void map(LongWritable lineId, Text line, Context context) throws IOException, InterruptedException {
-            String[] words = line.toString().split("\\s+");
+            String[] words = line.toString().trim().split("\\s+");
             //Assuming work on 1 gram
             if (words.length == 3) { // Reading from 1Gram
                 Text oneGramKey = new Text(words[0] + "\t" + words[1] + "\t" + ONE_GRAM_TAG);
