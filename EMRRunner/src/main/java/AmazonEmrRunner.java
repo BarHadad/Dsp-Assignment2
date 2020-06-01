@@ -25,21 +25,18 @@ public class AmazonEmrRunner {
 
         // STEP1
         String[] args1 = {Properties.FirstOneGramPath, Properties.FirstTwoGramPath, Properties.FirstOutputPath};
-        stepConfigs.add(buildStep(args1,"FirstCountWithDecadeMR","First count with decade"));
+        stepConfigs.add(buildStep(args1, "FirstCountWithDecadeMR", "First count with decade"));
 
         // STEP2
         String[] args2 = {Properties.JoinByLeftFirstArg, Properties.JoinByLeftSecondArg, Properties.JoinByLeftThirdArg};
         stepConfigs.add(buildStep(args2, "JoinByLeftInPairMR", "join by left in pair"));
 
         // STEP3
-        String[] args3 = {Properties.JoinByRightFirstArg, Properties.JoinByRightSecondArg, Properties.JoinByRightThirdArg};
-        stepConfigs.add(buildStep(args3, "JoinByRightInPairMR", "join by right in pair"));
+        String[] args3 = {Properties.JoinByRightFirstArg, Properties.JoinByRightSecondArg, Properties.JoinByRightThirdArg,
+                Properties.JoinByRightFourthArg};
+        stepConfigs.add(buildStep(args3, "JoinByRightInPairMR", "join by right in pair, and N"));
 
         // STEP4
-        String[] args4 = {Properties.JoinNFirstArg, Properties.JoinNSecondArg, Properties.JoinNThirdArg};
-        stepConfigs.add(buildStep(args4, "JoinNMR", "join N"));
-
-        // STEP5
         String[] args5 = {Properties.LikelihoodFirstArg, Properties.LikelihoodSecondArg};
         stepConfigs.add(buildStep(args5, "LikelihoodMR", "likelihood top 100"));
 
