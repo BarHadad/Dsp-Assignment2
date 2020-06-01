@@ -45,7 +45,7 @@ public class AmazonEmrRunner {
                 .withName("Full Run Big Data")                                   //cluster name
                 .withInstances(defineInstances())
                 .withSteps(stepConfigs)
-                .withLogUri(Properties.firstLogPath);
+                .withLogUri(Properties.LogsPath);
 
         runFlowRequest.setServiceRole("EMR_DefaultRole");
         runFlowRequest.setJobFlowRole("EMR_EC2_DefaultRole");
